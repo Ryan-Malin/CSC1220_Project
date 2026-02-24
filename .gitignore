@@ -1,0 +1,19 @@
+# Compiled executables
+vm_sim
+test_parser
+*.exe
+*.out
+
+# Object files
+*.o
+*.obj
+
+# MacOS files
+.DS_Store
+
+# VSCode files
+.vscode/
+
+# Temporary files
+*~
+*.swp
