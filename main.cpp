@@ -14,35 +14,23 @@ void processMemoryAccess(char operation, int pageNum,
 void printMemoryState(const SimulatorState &state);
 void printStatistics(const SimulatorState &state);
 
-int main()
+void runSimulation(string traceFile, int numFrames)
 {
-    cout << "====================================" << endl;
-    cout << "  Virtual Memory Simulator" << endl;
-    cout << "====================================" << endl;
-    cout << endl;
+    cout << "\n"
+         << string(60, '=') << endl;
+    cout << "TRACE FILE: " << traceFile << endl;
+    cout << string(60, '=') << endl;
 
-    // CONFIGURATION
-    int numFrames = 4;  // 4 frames of physical memory
-    int maxPages = 100; // Support up to 100 different pages
+    int maxPages = 100;
 
-    // I need to select the correct file for testing.
-    string traceFile = "test_trace.txt";
-    // string traceFile = "loop_trace.txt";
-    // string traceFile = "challenge_trace.txt";
-
-    cout << "Configuration:" << endl;
-    cout << "  Frames: " << numFrames << endl;
-    cout << "  Trace file: " << traceFile << endl;
-    cout << endl;
-
-    // Parse the trace file once
+    // Parse the trace file
     TraceParser parser;
     vector<TraceParser::Access> accesses = parser.parseFile(traceFile);
 
     if (accesses.empty())
     {
-        cout << "No accesses to simulate. Exiting." << endl;
-        return 1;
+        cout << "Could not load trace file. Skipping." << endl;
+        return;
     }
 
     cout << endl;
@@ -53,10 +41,7 @@ int main()
     // Test each algorithm
     for (int alg = 0; alg < 3; alg++)
     {
-        cout << "====================================" << endl;
-        cout << "  Testing: " << algorithms[alg] << endl;
-        cout << "====================================" << endl;
-        cout << endl;
+        cout << "---- " << algorithms[alg] << " ----" << endl;
 
         // Create fresh state for this algorithm
         SimulatorState state(numFrames, maxPages);
@@ -77,26 +62,42 @@ int main()
             policy = new ClockPolicy();
         }
 
-        // Run the simulation with this algorithm
+        // Run the simulation (quiet mode - no detailed output)
         for (int i = 0; i < accesses.size(); i++)
         {
             char op = accesses[i].operation;
             int page = accesses[i].pageNum;
-
-            // Uncomment next line to see detailed output
-            // cout << "Access " << i << ": " << op << " " << page << endl;
-
             processMemoryAccess(op, page, state, policy);
         }
 
-        // Print results for this algorithm
-        printStatistics(state);
+        // Print compact results
+        cout << "  Accesses: " << state.totalAccesses
+             << " | Hits: " << state.pageHits
+             << " | Faults: " << state.pageFaults
+             << " | Writebacks: " << state.writebacks
+             << " | Hit Rate: " << (100.0 * state.pageHits / state.totalAccesses) << "%"
+             << endl;
 
         // Clean up
         delete policy;
-
-        cout << endl;
     }
+}
+
+int main()
+{
+    cout << string(60, '=') << endl;
+    cout << "VIRTUAL MEMORY SIMULATOR - TESTING SUITE" << endl;
+    cout << string(60, '=') << endl;
+
+    int numFrames = 4;
+    cout << "\nConfiguration: " << numFrames << " frames\n"
+         << endl;
+
+    // Test all trace files
+    runSimulation("test_trace.txt", numFrames);
+    runSimulation("loop_trace.txt", numFrames);
+    runSimulation("challenge_trace.txt", numFrames);
+    runSimulation("locality_trace.txt", numFrames);
 
     return 0;
 }
