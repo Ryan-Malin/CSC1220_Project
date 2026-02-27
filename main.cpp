@@ -1,13 +1,9 @@
 #include "SimulatorState.h"
 #include "ReplacementPolicy.h"
 #include "TraceParser.h"
-
-// Connor's Files
 #include "FIFOPolicy.h"
 #include "LRUPolicy.h"
 #include "ClockPolicy.h"
-
-// template stuff
 #include <iostream>
 using namespace std;
 
@@ -28,56 +24,79 @@ int main()
     // CONFIGURATION
     int numFrames = 4;  // 4 frames of physical memory
     int maxPages = 100; // Support up to 100 different pages
+
+    // I need to select the correct file for testing.
     string traceFile = "test_trace.txt";
+    // string traceFile = "loop_trace.txt";
+    // string traceFile = "challenge_trace.txt";
 
     cout << "Configuration:" << endl;
     cout << "  Frames: " << numFrames << endl;
     cout << "  Trace file: " << traceFile << endl;
-    cout << "  Algorithm: FIFO" << endl;
     cout << endl;
 
-    // STEP 1: Initialize the simulator state
-    SimulatorState state(numFrames, maxPages);
-
-    // STEP 2: Create the replacement policy (FIFO for now)
-    ReplacementPolicy *policy = new SimpleFIFO();
-
-    // STEP 3: Parse the trace file
+    // Parse the trace file once
     TraceParser parser;
     vector<TraceParser::Access> accesses = parser.parseFile(traceFile);
 
     if (accesses.empty())
     {
         cout << "No accesses to simulate. Exiting." << endl;
-        delete policy;
         return 1;
     }
 
     cout << endl;
-    cout << "====================================" << endl;
-    cout << "  Starting Simulation" << endl;
-    cout << "====================================" << endl;
-    cout << endl;
 
-    // STEP 4: Run the simulation - process each access
-    for (int i = 0; i < accesses.size(); i++)
+    // Array of algorithm names
+    string algorithms[] = {"FIFO", "LRU", "Clock"};
+
+    // Test each algorithm
+    for (int alg = 0; alg < 3; alg++)
     {
-        char op = accesses[i].operation;
-        int page = accesses[i].pageNum;
+        cout << "====================================" << endl;
+        cout << "  Testing: " << algorithms[alg] << endl;
+        cout << "====================================" << endl;
+        cout << endl;
 
-        cout << "Access " << i << ": " << op << " " << page << endl;
+        // Create fresh state for this algorithm
+        SimulatorState state(numFrames, maxPages);
 
-        processMemoryAccess(op, page, state, policy);
+        // Create the appropriate policy
+        ReplacementPolicy *policy = nullptr;
 
-        // Optionally print memory state after each access
-        // printMemoryState(state);
+        if (algorithms[alg] == "FIFO")
+        {
+            policy = new FIFOPolicy();
+        }
+        else if (algorithms[alg] == "LRU")
+        {
+            policy = new LRUPolicy();
+        }
+        else if (algorithms[alg] == "Clock")
+        {
+            policy = new ClockPolicy();
+        }
+
+        // Run the simulation with this algorithm
+        for (int i = 0; i < accesses.size(); i++)
+        {
+            char op = accesses[i].operation;
+            int page = accesses[i].pageNum;
+
+            // Uncomment next line to see detailed output
+            // cout << "Access " << i << ": " << op << " " << page << endl;
+
+            processMemoryAccess(op, page, state, policy);
+        }
+
+        // Print results for this algorithm
+        printStatistics(state);
+
+        // Clean up
+        delete policy;
+
+        cout << endl;
     }
-
-    // STEP 5: Print final statistics
-    printStatistics(state);
-
-    // STEP 6: Clean up
-    delete policy;
 
     return 0;
 }
